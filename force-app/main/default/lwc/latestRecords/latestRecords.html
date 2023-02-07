@@ -1,0 +1,12 @@
+<template>
+    <lightning-card title='Recent Synched Records' icon-name="custom:custom63">
+        <div class="slds-m-around_medium">
+                <lightning-datatable
+                    key-field="Id"
+                    data={leads}
+                    columns={fields}
+                    hide-checkbox-column="true">
+                </lightning-datatable>
+        </div>
+    </lightning-card>
+</template>
