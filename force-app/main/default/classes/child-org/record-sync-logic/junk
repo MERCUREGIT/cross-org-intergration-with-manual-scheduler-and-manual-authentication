@@ -1,0 +1,39 @@
+    global static void syncRecords(string jsonString){
+        list<lead> listOfRecords = (list<lead>)JSON.deserializeStrict(jsonString, list<lead>.class);
+        list<lead> recordsToCreateOrUpdate = new list<lead>();
+        set<string> nameAndEmailsToSync = new set<String>();
+        map<String,lead> mapEmailToLeadToSync = new map<string,lead>();
+        map<String,lead> mapNameToLeadToSync = new map<string,lead>();
+
+        for(lead instance : listOfRecords){
+            nameAndEmailsToSync.add(instance.LastName);
+            nameAndEmailsToSync.add(instance.Email);
+        }
+        list<lead> existingLeadRecords = [SELECT id, name, lastname, company, leadsource, email  FROM lead WHERE Email in :nameAndEmailsToSync OR LastName in :nameAndEmailsToSync];
+
+        for (Lead instance : existingLeadRecords) {
+            mapNameToLeadToSync.put(instance.LastName, instance);
+            mapEmailToLeadToSync.put(instance.Email, instance);
+        }
+
+        for(lead instance : listOfRecords){            
+            if(mapEmailToLeadToSync.containsKey(instance.Email) && mapNameToLeadToSync.containsKey(instance.LastName)){
+                lead existingLeadRecordByEmail = mapEmailToLeadToSync.get(instance.Email);
+                lead existingLeadRecordByName = mapNameToLeadToSync.get(instance.LastName);
+                if(existingLeadRecordByEmail.LastName == instance.LastName && existingLeadRecordByEmail.Email==instance.email){
+
+                    recordsToCreateOrUpdate.add(new lead(id=existingLeadRecordByEmail.id, LastName=instance.LastName, Company=instance.company, Email= instance.email,LeadSource=instance.LeadSource));
+                }else if(existingLeadRecordByName.LastName == instance.LastName && existingLeadRecordByName.Email==instance.email){
+                    recordsToCreateOrUpdate.add(
+                        new lead(id=existingLeadRecordByName.id, LastName=instance.LastName, Company=instance.company, Email= instance.email,LeadSource=instance.LeadSource)
+                    );
+                }
+            }else{
+                System.debug('Inexisting record');
+                recordsToCreateOrUpdate.add(
+                    new lead(LastName=instance.LastName, Company=instance.company, Email= instance.email,LeadSource=instance.LeadSource  )
+                );
+            }
+        }
+        upsert recordsToCreateOrUpdate;
+    }

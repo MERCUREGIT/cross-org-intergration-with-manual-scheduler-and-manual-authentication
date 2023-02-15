@@ -1,0 +1,133 @@
+        // make call out to child org
+
+        Http httpService = new Http();
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint('https://login.salesforce.com/services/oauth2/token');
+        req.setHeader('Content-Type','application/x-www-form-urlencoded');
+        req.setMethod('POST');
+
+        string userName = 'ngumbuka@resourceful-koala-6six07.com';
+        string password = 'ngum@salesforce1';
+        string consumerKey = '3MVG9ux34Ig8G5ep4oU691FOquTYd_IJb4NQr43bMILCvDthzJLsF89Ei0DVceoOBt3C8CF.fAa2zNpg6EyX_';
+        string consumerSecrete = 'EB8A6FE02C58D6FD238D67A2FD1D314E2E4BBBFA18CA4A462C7F7BA8CC79A338';
+        string redirect_ui = 'https://login.salesforce.com/services/oauth2/success';
+        string grant_type = 'password';
+        String body = 'grant_type='+grant_type+'&client_id='+consumerKey+'&client_secret='+consumerSecrete+'&username='+userName+'&password='+password+'&'+redirect_ui;
+
+        req.setBody(body);
+        HttpResponse res = httpService.send(req);
+        Map<String,object> responseMap =(Map<String,object>)JSON.deserializeUntyped(res.getBody()) ;  
+        String token =  String.valueOf(responseMap.get('access_token'));
+
+
+
+    <script> 
+        function confirmCancel() {
+          var isCancel = confirm("Are you sure you wish to continue?");
+          if (isCancel) return true;
+      
+         return false;
+      }  
+    </script>
+	<apex:outputPanel id="thePanel" layout="block">
+        <apex:form>
+        <apex:pageBlock>
+                <apex:pageblocktable value="{!leads}" var="d">
+                    <apex:column value="{!d.name}"/>
+                    <apex:column value="{!d.lastname}"/>
+                    <apex:column value="{!d.company}"/>
+                    <apex:column value="{!d.leadsource}"/>
+                </apex:pageblocktable>
+             <apex:commandButton  value="Sync records to children" action="{!manuallySyncRecords}" onclick="return confirmCancel();"/> 
+             <apex:commandButton value="Cancel" action="{!navigateBackward}" onclick="return confirmCancel();"/> 
+         </apex:pageBlock>
+        </apex:form>
+    </apex:outputPanel>
+
+</apex:page>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          customMetadata.fullName = 'Apex_Parent_To_Child_Last_Import_Time.last_org_run'; //custom metadata name
+            customMetadata.label = 'last org run';
+            Metadata.CustomMetadataValue customField = new Metadata.CustomMetadataValue();
+            Metadata.CustomMetadataValue customId = new Metadata.CustomMetadataValue();
+            customId.field = 'Id';
+            customId.value = customMetadataId;
+            customMetadata.values.add(customId);
+            customField.field = 'Last_Run__c'; 
+            customField.value = System.now();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            public without sharing class MetaDataManager implements Metadata.DeployCallback{
+    public Apex_Parent_To_Child_Last_Import_Time__mdt metadataToUpdate;
+    public MetaDataManager(Apex_Parent_To_Child_Last_Import_Time__mdt mtd_toUpdate){
+        this.metadataToUpdate = mtd_toUpdate;
+        Id customMetadataId = this.metadataToUpdate.Id;
+        system.debug('CustomMetadata Id ' + customMetadataId);
+
+
+        if(customMetadataId != null) {
+            Metadata.CustomMetadata customMetadata = new Metadata.CustomMetadata();
+            List<Metadata.Metadata> records = Metadata.Operations.retrieve(Metadata.MetadataType.CustomMetadata,new list<string>{'Apex_Parent_To_Child_Last_Import_Time'+ this.metadataToUpdate.QualifiedApiName});
+            Metadata.CustomMetadata lastRunTime = (Metadata.CustomMetadata)  records[0];
+            String RecordName = lastRunTime.fullName.substringAfter('.');
+            lastRunTime.values[0].value = System.now();
+          
+            // customMetadata.values.add(customField);
+            Metadata.DeployContainer mdContainer = new Metadata.DeployContainer();
+            mdContainer.addMetadata(lastRunTime);
+            Id jobId = Metadata.Operations.enqueueDeployment(mdContainer, null);
+            system.debug('jobId is ' + jobId);
+        }
+       
+    }
+    
+    public void handleResult(Metadata.DeployResult result, Metadata.DeployCallbackContext context){
+        if(result.status == Metadata.DeployStatus.SUCCEEDED)
+        {
+            //success
+            System.debug(' ===>'+ result);
+        }else{
+            //not success
+            System.debug(' ===> fail '+ result);
+        }
+    }
+}
